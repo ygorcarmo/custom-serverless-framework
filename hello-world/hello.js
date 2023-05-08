@@ -1,24 +1,25 @@
-/**
- * Copyright (c) HashiCorp, Inc.
- * SPDX-License-Identifier: MPL-2.0
- */
+const serverless = require("serverless-http");
+const express = require("express");
+const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Lambda function code
+app.get("/", (req, res, next) => {
+  return res.status(200).json({
+    message: "Hello from root!",
+  });
+});
 
-module.exports.handler = async (event) => {
-  console.log("Event: ", event);
-  let responseMessage = "Hello, World!";
-  if (event.queryStringParameters && event.queryStringParameters["Name"]) {
-    responseMessage = "Hello, " + event.queryStringParameters["Name"] + "!";
-  }
+app.get("/hello", (req, res, next) => {
+  return res.status(200).json({
+    message: "Hello from path!",
+  });
+});
 
-  return {
-    statusCode: 200,
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      message: responseMessage,
-    }),
-  };
-};
+app.use((req, res, next) => {
+  return res.status(404).json({
+    error: "Not Found",
+  });
+});
+
+module.exports.handler = serverless(app);

@@ -59,7 +59,7 @@ resource "aws_lambda_function" "hello_world" {
   s3_bucket = aws_s3_bucket.lambda_bucket.id
   s3_key    = aws_s3_object.lambda_hello_world.key
 
-  runtime = "nodejs12.x"
+  runtime = "nodejs16.x"
   handler = "hello.handler"
 
   source_code_hash = data.archive_file.lambda_hello_world.output_base64sha256
@@ -103,7 +103,7 @@ resource "aws_apigatewayv2_api" "lambda" {
 resource "aws_apigatewayv2_stage" "lambda" {
   api_id = aws_apigatewayv2_api.lambda.id
 
-  name        = "serverless_lambda_stage"
+  name        = "$default"
   auto_deploy = true
 
   access_log_settings {
@@ -126,17 +126,17 @@ resource "aws_apigatewayv2_stage" "lambda" {
 }
 
 resource "aws_apigatewayv2_integration" "hello_world" {
-  api_id = aws_apigatewayv2_api.lambda.id
+  api_id           = aws_apigatewayv2_api.lambda.id
+  integration_type = "AWS_PROXY"
 
-  integration_uri    = aws_lambda_function.hello_world.invoke_arn
-  integration_type   = "AWS_PROXY"
   integration_method = "POST"
+  integration_uri    = aws_lambda_function.hello_world.invoke_arn
 }
 
 resource "aws_apigatewayv2_route" "hello_world" {
   api_id = aws_apigatewayv2_api.lambda.id
 
-  route_key = "GET /hello"
+  route_key = "$default"
   target    = "integrations/${aws_apigatewayv2_integration.hello_world.id}"
 }
 
