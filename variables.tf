@@ -1,6 +1,3 @@
-# Copyright (c) HashiCorp, Inc.
-# SPDX-License-Identifier: MPL-2.0
-
 # Input variable definitions
 
 variable "aws_region" {
@@ -8,4 +5,39 @@ variable "aws_region" {
 
   type    = string
   default = "us-east-1"
+}
+
+
+variable "tags" {
+  type        = map(string)
+  description = "A mapping of tags to assign to all resources."
+  default     = {}
+}
+
+
+variable "aws_lambda_source_code_dir" {
+  type        = string
+  description = "The folder path of the lambda function code is located"
+}
+
+
+variable "aws_lambda_source_code_dir_name" {
+  type        = string
+  description = "The name of the folder where the lambda function code is located"
+}
+
+variable "aws_lambda_function_name" {
+  type        = string
+  description = "AWS lambda's function name"
+}
+
+
+variable "aws_lambda_runtime" {
+  type        = string
+  description = "Lambda runtime"
+}
+
+variable "aws_lambda_handler" {
+  type        = string
+  description = "Lambda handler name"
 }

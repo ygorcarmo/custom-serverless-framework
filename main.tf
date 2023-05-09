@@ -5,13 +5,12 @@ provider "aws" {
   region = var.aws_region
 
   default_tags {
-    tags = {
-      hashicorp-learn = "lambda-api-gateway"
-    }
+    tags = var.tags
   }
 
 }
 
+# Random name for S3 bucket
 resource "random_pet" "lambda_bucket_name" {
   prefix = "learn-terraform-functions"
   length = 4
@@ -36,39 +35,39 @@ resource "aws_s3_bucket_acl" "bucket_acl" {
 }
 
 
-data "archive_file" "lambda_hello_world" {
+data "archive_file" "lambda_code_zip" {
   type = "zip"
 
-  source_dir  = "${path.module}/hello-world"
-  output_path = "${path.module}/hello-world.zip"
+  source_dir  = var.aws_lambda_source_code_dir
+  output_path = "${var.aws_lambda_source_code_dir}.zip"
 }
 
-resource "aws_s3_object" "lambda_hello_world" {
+resource "aws_s3_object" "lambda_code_zip_s3" {
   bucket = aws_s3_bucket.lambda_bucket.id
 
-  key    = "hello-world.zip"
-  source = data.archive_file.lambda_hello_world.output_path
+  key    = var.aws_lambda_source_code_dir_name
+  source = data.archive_file.lambda_code_zip.output_path
 
-  etag = filemd5(data.archive_file.lambda_hello_world.output_path)
+  etag = filemd5(data.archive_file.lambda_code_zip.output_path)
 }
 
 
-resource "aws_lambda_function" "hello_world" {
-  function_name = "HelloWorld"
+resource "aws_lambda_function" "lambda_function" {
+  function_name = var.aws_lambda_function_name
 
   s3_bucket = aws_s3_bucket.lambda_bucket.id
-  s3_key    = aws_s3_object.lambda_hello_world.key
+  s3_key    = aws_s3_object.lambda_code_zip_s3.key
 
-  runtime = "nodejs16.x"
-  handler = "hello.handler"
+  runtime = var.aws_lambda_runtime
+  handler = var.aws_lambda_handler
 
-  source_code_hash = data.archive_file.lambda_hello_world.output_base64sha256
+  source_code_hash = data.archive_file.lambda_code_zip.output_base64sha256
 
   role = aws_iam_role.lambda_exec.arn
 }
 
-resource "aws_cloudwatch_log_group" "hello_world" {
-  name = "/aws/lambda/${aws_lambda_function.hello_world.function_name}"
+resource "aws_cloudwatch_log_group" "aws_lambda_cloudwatch" {
+  name = "/aws/lambda/${aws_lambda_function.lambda_function.function_name}"
 
   retention_in_days = 30
 }
@@ -125,19 +124,19 @@ resource "aws_apigatewayv2_stage" "lambda" {
   }
 }
 
-resource "aws_apigatewayv2_integration" "hello_world" {
+resource "aws_apigatewayv2_integration" "api_gw_integration" {
   api_id           = aws_apigatewayv2_api.lambda.id
   integration_type = "AWS_PROXY"
 
   integration_method = "POST"
-  integration_uri    = aws_lambda_function.hello_world.invoke_arn
+  integration_uri    = aws_lambda_function.lambda_function.invoke_arn
 }
 
-resource "aws_apigatewayv2_route" "hello_world" {
+resource "aws_apigatewayv2_route" "api_gw_route" {
   api_id = aws_apigatewayv2_api.lambda.id
 
   route_key = "$default"
-  target    = "integrations/${aws_apigatewayv2_integration.hello_world.id}"
+  target    = "integrations/${aws_apigatewayv2_integration.api_gw_integration.id}"
 }
 
 resource "aws_cloudwatch_log_group" "api_gw" {
@@ -149,7 +148,7 @@ resource "aws_cloudwatch_log_group" "api_gw" {
 resource "aws_lambda_permission" "api_gw" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.hello_world.function_name
+  function_name = aws_lambda_function.lambda_function.function_name
   principal     = "apigateway.amazonaws.com"
 
   source_arn = "${aws_apigatewayv2_api.lambda.execution_arn}/*/*"
