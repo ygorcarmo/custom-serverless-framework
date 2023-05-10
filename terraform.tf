@@ -1,10 +1,11 @@
 terraform {
 
-  # cloud {
-  #   workspaces {
-  #     name = "learn-terraform-lambda-api-gateway"
-  #   }
-  # }
+  cloud {
+    organization = "ygoro"
+    workspaces {
+      name = "serverless-gh-actions"
+    }
+  }
 
   required_providers {
     aws = {
