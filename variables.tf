@@ -11,7 +11,9 @@ variable "aws_region" {
 variable "tags" {
   type        = map(string)
   description = "A mapping of tags to assign to all resources."
-  default     = {}
+  default = {
+    "project" = "lambda-api-gateway"
+  }
 }
 
 
